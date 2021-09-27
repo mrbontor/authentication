@@ -1,0 +1,23 @@
+{
+  "name": "auth",
+  "version": "1.0.0",
+  "description": "a design pattern for development",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "ajv": "^8.6.3",
+    "ajv-errors": "^3.0.0",
+    "ajv-formats": "^2.1.1",
+    "dotenv": "^10.0.0",
+    "express": "^4.17.1",
+    "jsonwebtoken": "^8.5.1",
+    "mongo-datatable": "github:mrbontor/mongo-datatable#es6",
+    "mongodb": "^4.1.2",
+    "winston": "^3.3.3"
+  }
+}
