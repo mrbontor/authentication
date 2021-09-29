@@ -19,7 +19,7 @@ const USER_COLLECTION       = 'user'
 const USER_CREDENTIAL_COLLECTION = 'user_credential'
 const ROLE_COLLECTION       = 'role'
 
-const signup = async (req, res)  => {
+const signUp = async (req, res)  => {
     let results = {}
     try {
         let payload = await validate(req.body, SIGNUP)
@@ -70,4 +70,4 @@ const signup = async (req, res)  => {
 }
 
 
-module.exports = signup
+module.exports = signUp

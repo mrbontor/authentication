@@ -23,7 +23,7 @@ const ROLE_COLLECTION       = 'role'
 
 const results = {}
 
-const signin = async (req, res)  => {
+const signIn = async (req, res)  => {
     try {
         let payload = await validate(req.body, SIGNIN)
         logging.debug(`[CHECK][PAYLOAD] >>>>> ${JSON.stringify(payload)}`)
@@ -33,8 +33,8 @@ const signin = async (req, res)  => {
             return res.status(BAD_REQUEST).send(results);
         }
 
-        let isUser = await db.findOne(USER_COLLECTION, {username: payload.username})
-        logging.debug(`[CHECK][USERNAME] >>>>> ${JSON.stringify(isUser)}`)
+        let isUser = await db.findOne(USER_COLLECTION, {username: payload.username, status: true})
+        logging.debug(`[GET][USERNAME] >>>>> ${JSON.stringify(isUser)}`)
         if (null === isUser) {
             results.error = 'NotFound'
             return res.status(NOT_FOUND).send(results);
@@ -54,12 +54,35 @@ const signin = async (req, res)  => {
 
         let token = crypt.genToken(
             {
-                _id: isUser._id.toString(),
+                userID: isUser._id.toString(),
 
             }
         )
+        let refreshToken = crypt.genRefreshToken( {userID: isUser._id.toString() } )
+        let now = new Date()
+        let clause = { userID: isUser._id }
+        let data = {
+            $set: {
+                userID: isUser._id,
+                username: isUser.username,
+                fullname: isUser.fullname || null,
+                accessToken: token,
+                refreshToken: refreshToken,
+                roles: [],
+                created: now,
+                modified: now
+            }
+        }
+        let options = { upsert: true, returnDocument: 'after'}
 
-        res.status(CREATED).send(token)
+        const storeCredential = await db.findAndUpdate(USER_CREDENTIAL_COLLECTION, clause, data, options)
+        logging.debug(`[SIGNIN][POST] >>>>> ${JSON.stringify(storeCredential)}`)
+        if (undefined === storeCredential) {
+            results.error = 'IncorectRequest'
+            return res.status(BAD_REQUEST).send(result);
+        }
+
+        res.status(SUCCESS).send(data["$set"])
     } catch (e) {
         logging.error(`[SIGNIN][ERROR] >>>>> ${JSON.stringify(e.stack)}`)
         results.error = 'ServerError'
@@ -67,4 +90,61 @@ const signin = async (req, res)  => {
     }
 }
 
-module.exports = { signin }
+const sigRefreshToken = async (req, res)  => {
+    try {
+        let refreshToken = req.body.refreshToken || null
+        if (null === refreshToken) {
+            results.error = 'InvalidToken'
+            return res.status(BAD_REQUEST).send(results);
+        }
+
+        let isTokenExist = await db.findOne(USER_CREDENTIAL_COLLECTION, {refreshToken: refreshToken})
+        logging.debug(`[GET][REFRESH][TOKEN] >>>>> ${JSON.stringify(isTokenExist)}`)
+        if (null === isTokenExist) {
+            results.error = 'InvalidToken'
+            return res.status(BAD_REQUEST).send(results);
+        }
+
+        let isTokenRefreshValid = crypt.verifyRefreshToken(isTokenExist.refreshToken)
+        logging.debug(`[VERIFY][REFRESH][TOKEN] >>>>> ${JSON.stringify(isTokenRefreshValid)}`)
+        if (!isTokenRefreshValid) {
+            results.error = 'TokenExpired'
+            return res.status(BAD_REQUEST).send(results);
+        }
+
+        let isTokenValid = crypt.verifyToken(isTokenExist.accessToken)
+        logging.debug(`[VERIFY][TOKEN] >>>>> ${JSON.stringify(isTokenValid)}`)
+        if (!isTokenValid) {
+            results.error = 'TokenExpired'
+            return res.status(BAD_REQUEST).send(results);
+        }
+
+        let refresh_token = crypt.genRefreshToken( {userID: isTokenExist.userID.toString() } )
+        logging.debug(`[GEN][REFRESH][TOKEN] >>>>> ${JSON.stringify(refresh_token)}`)
+
+        let clause = { userID: isTokenExist.userID }
+        let data = {
+            $set: {
+                refreshToken: refresh_token,
+                modified: new Date()
+            }
+        }
+        let options = { upsert: false, returnDocument: 'after'}
+
+        let updateCredential = await db.findAndUpdate(USER_CREDENTIAL_COLLECTION, clause, data, options)
+        logging.debug(`[SIGNIN][PUT] >>>>> ${JSON.stringify(updateCredential)}`)
+        let response = {
+            accessToken: updateCredential.accessToken,
+            refreshToken: updateCredential.refreshToken,
+        }
+        res.status(BAD_REQUEST).send(response);
+
+    } catch (e) {
+        logging.error(`[SIGNIN][ERROR] >>>>> ${JSON.stringify(e.stack)}`)
+        results.error = 'ServerError'
+        res.status(SERVER_ERROR).send(results)
+    }
+}
+
+
+module.exports = { signIn , sigRefreshToken}

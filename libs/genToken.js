@@ -1,36 +1,52 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const SECRET = process.env.TOKEN_USER_SECRET
-const EXPIRED = process.env.TOKEN_USER_EXPIRED
+const { v4: uuidv4 } = require('uuid');
+
+const TOKEN_SECRET          = process.env.APP_TOKEN_SECRET
+const TOKEN_EXPIRY          = process.env.APP_TOKEN_EXPIRED
+const REFRESH_TOKEN_SECRET  = process.env.APP_REFRESH_TOKEN_SECRET
+const REFRESH_TOKEN_EXPIRY  = process.env.APP_REFRESH_TOKEN_EXPIRED
+
 const ALGORITM = 'sha512'
 
 
 const genToken = (data) => {
     try {
         if (data) {
-            return jwt.sign(data, SECRET, { expiresIn: parseInt(EXPIRED) });
+            return jwt.sign(data, TOKEN_SECRET, { expiresIn: TOKEN_EXPIRY });
         }
     } catch (e) {
-        console.log(e.stack);
         return false;
     }
 };
 
-const generateRefreshToken = (data) => {
-    // create a refresh token that expires in 7 days
-    return new db.RefreshToken({
-        data,
-        token: crypto.randomBytes(40).toString('hex'),
-        expires: new Date(Date.now() + 7*24*60*60*1000)
-    });
-}
+const genRefreshToken = (data) => {
+    try {
+        if (data) {
+            return jwt.sign(data, REFRESH_TOKEN_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRY });
+        }
+    } catch (e) {
+        return false;
+    }
+};
 
 const verifyToken = (token) => {
     try {
         if (token) {
-            return jwt.verify(token, SECRET);
+            return jwt.verify(token, TOKEN_SECRET);
         }
     } catch(e) {
+        return false
+    }
+};
+
+const verifyRefreshToken = (token) => {
+    try {
+        if (token) {
+            return jwt.verify(token, REFRESH_TOKEN_SECRET);
+        }
+    } catch(e) {
+        // console.log(e);
         return false
     }
 };
@@ -60,7 +76,9 @@ const verifyHashPassword = (hash, salt, iterations, password) => {
 
 module.exports = {
     genToken,
+    genRefreshToken,
     verifyToken,
+    verifyRefreshToken,
     genNumberCode,
     genHashPassword,
     verifyHashPassword
