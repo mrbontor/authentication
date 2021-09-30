@@ -26,9 +26,6 @@ class Logging {
     createLogging(args) {
         this.logger = winston.createLogger({
             level: args.level,
-            // timestamp: function() {
-            //  return new Date()
-            // },
             format: combine(
                 colorize(),
                 timestamp(),
@@ -49,12 +46,6 @@ class Logging {
             ]
         })
 
-        // DEBUG:
-        // if (process.env.NODE_ENV !== 'production') {
-        //   logger.add(new winston.transports.Console({
-        //     format: winston.format.simple()
-        //   }));
-        // }
 
         // Call exceptions.handle with a transport to handle exceptions
         this.logger.exceptions.handle(
@@ -65,9 +56,6 @@ class Logging {
     createConsoleLogging(args) {
         this.logger = winston.createLogger({
             level: args.level,
-            //timestamp: function() {
-            //  return new Date()
-            //},
             format: combine(
                 colorize(),
                 timestamp(),
@@ -86,11 +74,12 @@ class Logging {
 
     init(args = {}) {
         if ('file' === args.type) return this.createLogging(args)
-        if ('console' === args.type) return this.createConsoleLogging(args)
+        if ('console' === args.type || undefined === args.type) return this.createConsoleLogging(args)
         if ('both' === args.type) {
             this.createLogging(args)
+            this.createConsoleLogging(args)
+            return ;
         }
-        return this.createConsoleLogging(args)
     }
 
     error(message) {
