@@ -62,28 +62,27 @@ const signUp = async (req, res)  => {
             return res.status(BAD_REQUEST).send(result);
         }
 
-        await storeCredential(store.insertedId)
+        await storeCredential(store.insertedId, now)
 
         res.status(CREATED).send({})
     } catch (e) {
         logging.error(`[SIGNUP][POST] >>>>> ${JSON.stringify(e.stack)}`)
-        results.error = 'ServerError'
+        results.error = 'Internal Server Error'
         res.status(SERVER_ERROR).send(results)
     }
 }
 
 
-const storeCredential = async (userID) => {
+const storeCredential = async (userID, date) => {
     try {
         let accessToken = await signAccessToken({userID: userID}, userID.toString())
         let refreshToken = await signRefreshToken({userID: userID}, userID.toString())
-        let now = new Date()
         let data = {
             userID: userID,
             token: refreshToken,
             status: true,
-            created: now,
-            modified: now
+            created: date,
+            modified: date
         }
         const store = await db.insertOne(USER_CREDENTIAL_COLLECTION, data)
         logging.debug(`[CREDENTIAL][POST] >>>>> ${JSON.stringify(store)}`)

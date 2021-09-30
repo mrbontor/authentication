@@ -2,6 +2,7 @@ const fs = require('fs');
 const logging = require(__dirname + '../../../../libs/logging');
 const { verifyAccessToken } = require(__dirname + '../../../../libs/auth/jwtLibs');
 const db = require(__dirname + '../../../../libs/db/mongoPromise');
+const ObjectId = require('mongodb').ObjectId;
 
 const TOKEN_SECRET                  = process.env.APP_TOKEN_SECRET
 const USER_CREDENTIAL_COLLECTION    = 'user_credential'
@@ -25,11 +26,11 @@ const verifyToken = async (req, res, next) => {
             return res.status(UNAUTHORIZED).json(results)
         }
 
-        let isLogout = await db.findOne(USER_CREDENTIAL_COLLECTION, {userID: ObjectId(isTokenRefreshValid.aud), status: true})
+        let isLogout = await db.findOne(USER_CREDENTIAL_COLLECTION, {userID: ObjectId(isTokenValid.aud)})
         logging.debug(`[GET][CREDENTIAL] >>>>> ${JSON.stringify(isLogout)}`)
         if (null === isLogout) {
-            results.error = 'Invalid Token'
-            return res.status(UNAUTHORIZED).send(results);
+            results.error = 'Token Expired'
+            return res.status(UNAUTHORIZED).json(results)
         }
 
         req.payload = isTokenValid
