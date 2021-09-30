@@ -7,9 +7,7 @@ const { verifyHashPassword } = require(__dirname + '../../../../libs/auth/passwo
 const {
     signAccessToken,
     signRefreshToken,
-    verifyRefreshToken,
-    updateAccessToken,
-    updateRefreshToken
+    verifyRefreshToken
 } = require(__dirname + '../../../../libs/auth/jwtLibs');
 
 const SIGNIN = JSON.parse(fs.readFileSync(__dirname + '/schema/signin.json'))
@@ -69,7 +67,6 @@ const signIn = async (req, res)  => {
             username: isUser.username,
             fullname: isUser.fullname || null,
             roles: [],
-            status: true,
             created: now,
             modified: now
         }
@@ -115,7 +112,6 @@ const refreshToken = async (req, res)  => {
             username: isTokenRefreshValid.username,
             fullname: isTokenRefreshValid.fullname || null,
             roles: [],
-            status: true,
             created: now,
             modified: now
         }
@@ -130,7 +126,7 @@ const refreshToken = async (req, res)  => {
     } catch (e) {
         logging.error(`[SIGNIN][ERROR] >>>>> ${JSON.stringify(e.stack)}`)
 
-        results.error = 'ServerError'
+        results.error = 'Internal Server Error'
         res.status(SERVER_ERROR).send(results)
     }
 }
@@ -157,7 +153,6 @@ const signOut = async (req, res)  => {
             results.error = 'Invalid Token'
             return res.status(UNAUTHORIZED).send(results);
         }
-        await updateToken(dataPayload, ObjectId(isTokenRefreshValid.aud))
 
         res.status(SUCCESS_NO_CONTENT).send({})
     } catch (e) {
@@ -194,15 +189,5 @@ const generateToken = async (payload, userID) => {
     }
 }
 
-const updateToken = async (payload, userID) => {
-    try {
-        let accessToken = await signAccessToken(payload, userID.toString())
-        let refreshToken = await signRefreshToken(payload, userID.toString())
 
-        return { accessToken, refreshToken };
-    } catch (e) {
-        logging.error(`[GENERATE][TOKEN] >>>>> ${JSON.stringify(e.stack)}`)
-        return false;
-    }
-}
 module.exports = { signIn , refreshToken, signOut}
