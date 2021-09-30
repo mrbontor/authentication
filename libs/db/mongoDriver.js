@@ -86,9 +86,9 @@ class MongoDB {
         })
     }
 
-    findOne(collection, document, callback = null) {
+    findOne(collection, document, options= null, callback = null) {
         this.connect( (db, client) => {
-            db.collection(collection).findOne(document, (error, result) => {
+            db.collection(collection).findOne(document, options, (error, result) => {
                 if (callback) {
                     callback(error, result)
                 }

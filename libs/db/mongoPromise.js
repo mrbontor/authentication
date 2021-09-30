@@ -28,9 +28,9 @@ const find = (collection, data, options = {}) => {
     })
 }
 
-const findOne = (collection, data) => {
+const findOne = (collection, data, options = {}) => {
     return new Promise( (resolve, reject) => {
-        mongo.findOne(collection, data, (err, result) => {
+        mongo.findOne(collection, data, options, (err, result) => {
             if(err) reject(err)
             resolve(result)
         })

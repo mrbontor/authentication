@@ -4,7 +4,7 @@ const express = require('express')
 const env = process.env.ENV || 'development'
 
 const logging = require(__dirname + '/libs/logging')
-const mongo = require(__dirname + '/libs/mongoDriver')
+const mongo = require(__dirname + '/libs/db/mongoDriver')
 const app = express()
 
 // Initialize config file
