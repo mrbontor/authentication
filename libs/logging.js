@@ -16,7 +16,7 @@ const {
 process.env.TZ = 'Asia/Jakarta'
 
 const myFormat = printf(info => {
-    return `${formatDateStandard(info.timestamp, true)} ${info.level}: ${info.message}`;
+    return `${formatDateStandard(info.timestamp, true).toString()} ${info.level}: ${info.message}`;
 });
 
 
@@ -37,7 +37,7 @@ class Logging {
                 // - Write all logs error (and below) to `error.log`.
                 //
                 new winston.transports.File({
-                    filename: args.path + args.filename + args.errorSufix + '.log',
+                    filename: args.path + args.filename + '-errors.log',//args.errorSufix + '.log',
                     level: 'error'
                 }),
                 new winston.transports.File({
@@ -73,13 +73,13 @@ class Logging {
 
 
     init(args = {}) {
-        if ('file' === args.type) return this.createLogging(args)
-        if ('console' === args.type || undefined === args.type) return this.createConsoleLogging(args)
-        if ('both' === args.type) {
+        let type = args.type || 'console'
+        if ('file' === type) return this.createLogging(args)
+        if ('console' === type) return this.createConsoleLogging(args)
+        if ('both' === type) {
             this.createLogging(args)
-            this.createConsoleLogging(args)
-            return ;
         }
+        this.createConsoleLogging(args)
     }
 
     error(message) {

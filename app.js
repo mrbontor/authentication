@@ -16,6 +16,7 @@ process.env.TZ = 'Asia/Jakarta'
 logging.init({
     path: process.env.LOG_PATH,
     level: process.env.LOG_LEVEL,
+    type: process.env.LOG_TYPE,
     filename: process.env.LOG_FILENAME
 })
 
