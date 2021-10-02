@@ -13,7 +13,6 @@ const {
 const SIGNIN = JSON.parse(fs.readFileSync(__dirname + '/schema/signin.json'))
 
 const SUCCESS               = 200
-const CREATED               = 201
 const SUCCESS_NO_CONTENT    = 204
 const BAD_REQUEST           = 400
 const UNAUTHORIZED          = 401
@@ -26,26 +25,26 @@ const USER_COLLECTION       = 'user'
 const USER_CREDENTIAL_COLLECTION = 'user_credential'
 const ROLE_COLLECTION       = 'role'
 
-const results = {}
+let results = { message: '' }
 
 const signIn = async (req, res)  => {
     try {
         let payload = await validate(req.body, SIGNIN)
         logging.debug(`[CHECK][PAYLOAD] >>>>> ${JSON.stringify(payload)}`)
         if (payload.length > 0) {
-            results.error = 'Validation Error'
+            results.message = 'Validation Error'
             results.errors = payload
             return res.status(BAD_REQUEST).send(results);
         }
 
         let isUser = await db.findOne(USER_COLLECTION, {username: payload.username})
         logging.debug(`[GET][USERNAME] >>>>> ${JSON.stringify(isUser)}`)
-        if (null === isUser) {
-            results.error = 'User not found'
+        if (isUser === null) {
+            results.message: 'Login was failed.'
             return res.status(NOT_FOUND).send(results);
         }
         if (!isUser.status) {
-            results.error = 'User not activated yet, please contact administrator'
+            results.message = 'User not activated yet, please contact administrator'
             return res.status(UNPROCESSABLE_ENTITY).send(results);
         }
 
@@ -57,7 +56,7 @@ const signIn = async (req, res)  => {
         )
         logging.debug(`[CHECK][PASSWORD] >>>>> ${JSON.stringify(isPasswordValid)}`)
         if (!isPasswordValid) {
-            results.error = 'Incorect Password or Username'
+            results.message = 'Incorect Password or Username'
             return res.status(UNAUTHORIZED).send(results);
         }
 
@@ -72,14 +71,17 @@ const signIn = async (req, res)  => {
         }
         let token = await generateToken(dataPayload, isUser._id)
         if (!token) {
-            results.error = 'Invalid Token'
+            results.message = 'Invalid Token'
             return res.status(UNAUTHORIZED).send(results);
         }
 
-        res.status(SUCCESS).send(token)
+        res.status(SUCCESS).send({
+            message: 'Login Success.',
+            data: token
+        })
     } catch (e) {
         logging.error(`[SIGNIN][ERROR] >>>>> ${JSON.stringify(e.stack)}`)
-        results.error = 'Server Internal Error'
+        results.message = 'Server Internal Error'
         res.status(SERVER_ERROR).send(results)
     }
 }
@@ -88,21 +90,21 @@ const refreshToken = async (req, res)  => {
     try {
         let refreshToken = req.body.refreshToken || null
         if (null === refreshToken) {
-            results.error = 'refreshToken is required'
+            results.message = 'RefreshToken is required'
             return res.status(BAD_REQUEST).send(results);
         }
 
         let isTokenRefreshValid = await verifyRefreshToken(refreshToken)
         logging.debug(`[VERIFY][REFRESH][TOKEN] >>>>> ${JSON.stringify(isTokenRefreshValid)}`)
         if (!isTokenRefreshValid) {
-            results.error = 'Token Expired'
+            results.message = 'Token Expired'
             return res.status(UNAUTHORIZED).send(results);
         }
 
         let isTokenExist = await db.findOne(USER_CREDENTIAL_COLLECTION, {userID: ObjectId(isTokenRefreshValid.aud)})
         logging.debug(`[GET][CREDENTIAL] >>>>> ${JSON.stringify(isTokenExist)}`)
         if (null === isTokenExist) {
-            results.error = 'Invalid Token'
+            results.message = 'Invalid Token'
             return res.status(UNAUTHORIZED).send(results);
         }
 
@@ -118,50 +120,50 @@ const refreshToken = async (req, res)  => {
 
         let newToken = await generateToken(dataPayload, ObjectId(isTokenRefreshValid.aud))
         if (!newToken) {
-            results.error = 'Invalid Token'
+            results.message = 'Invalid Token'
             return res.status(UNAUTHORIZED).send(results);
         }
 
-        res.status(SUCCESS).send(newToken);
+        res.status(SUCCESS).send({
+            message: 'Success.',
+            data: newToken
+        });
     } catch (e) {
         logging.error(`[SIGNIN][ERROR] >>>>> ${JSON.stringify(e.stack)}`)
-
-        results.error = 'Internal Server Error'
+        results.message = 'Internal Server Error'
         res.status(SERVER_ERROR).send(results)
     }
 }
-
 
 const signOut = async (req, res)  => {
     try {
         let refreshToken = req.body.refreshToken || null
         if (null === refreshToken) {
-            results.error = 'refreshToken is required'
+            results.message = 'RefreshToken is required'
             return res.status(BAD_REQUEST).send(results);
         }
 
         let isTokenRefreshValid = await verifyRefreshToken(refreshToken)
         logging.debug(`[VERIFY][REFRESH][TOKEN] >>>>> ${JSON.stringify(isTokenRefreshValid)}`)
         if (!isTokenRefreshValid) {
-            results.error = 'Token Expired'
+            results.message = 'Token Expired'
             return res.status(UNAUTHORIZED).send(results);
         }
 
         let deleteToken = await db.deleteOne(USER_CREDENTIAL_COLLECTION, {userID: ObjectId(isTokenRefreshValid.aud)})
         logging.debug(`[DELETE][CREDENTIAL] >>>>> ${JSON.stringify(deleteToken)}`)
         if (null === deleteToken) {
-            results.error = 'Invalid Token'
+            results.message = 'Invalid Token'
             return res.status(UNAUTHORIZED).send(results);
         }
 
         res.status(SUCCESS_NO_CONTENT).send({})
     } catch (e) {
         logging.error(`[SIGNIN][ERROR] >>>>> ${JSON.stringify(e.stack)}`)
-        results.error = 'Server Internal Error'
+        results.message = 'Server Internal Error'
         res.status(SERVER_ERROR).send(results)
     }
 }
-
 
 const generateToken = async (payload, userID) => {
     try {
@@ -188,6 +190,5 @@ const generateToken = async (payload, userID) => {
         return false;
     }
 }
-
 
 module.exports = { signIn , refreshToken, signOut}

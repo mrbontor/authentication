@@ -26,7 +26,7 @@ const signUp = async (req, res)  => {
         let payload = await validate(req.body, SIGNUP)
         logging.debug(`[CHECK][PAYLOAD] >>>>> ${JSON.stringify(payload)}`)
         if (payload.length > 0) {
-            results.error = 'Validation error'
+            results.message = 'Validation error'
             results.errors = payload
             return res.status(BAD_REQUEST).send(results);
         }
@@ -34,14 +34,14 @@ const signUp = async (req, res)  => {
         let isDuplicateEmail = await db.findOne(USER_COLLECTION, {email: payload.email}, {projection: {email:1}} )
         logging.debug(`[CHECK][EMAIL] >>>>> ${JSON.stringify(isDuplicateEmail)}`)
         if (null !== isDuplicateEmail) {
-            results.error = `${isDuplicateEmail.email} is already been registered`
+            results.message = `${isDuplicateEmail.email} is already been registered`
             return res.status(UNPROCESSABLE_ENTITY).send(results);
         }
 
         let isDuplicateUsername = await db.findOne(USER_COLLECTION, {username: payload.username}, {projection: {username:1}} )
         logging.debug(`[CHECK][USERNAME] >>>>> ${JSON.stringify(isDuplicateUsername)}`)
         if (null !== isDuplicateUsername) {
-            results.error = `${isDuplicateUsername.username} is already been used`
+            results.message = `${isDuplicateUsername.username} is already been used`
             return res.status(UNPROCESSABLE_ENTITY).send(results);
         }
 
@@ -58,7 +58,7 @@ const signUp = async (req, res)  => {
         const store = await db.insertOne(USER_COLLECTION, payload)
         logging.debug(`[SIGNUP][POST] >>>>> ${JSON.stringify(store)}`)
         if (undefined === store.insertedId) {
-            results.error = 'Incorect Request'
+            results.message = 'Incorect Request'
             return res.status(BAD_REQUEST).send(result);
         }
 
@@ -67,11 +67,10 @@ const signUp = async (req, res)  => {
         res.status(CREATED).send({})
     } catch (e) {
         logging.error(`[SIGNUP][POST] >>>>> ${JSON.stringify(e.stack)}`)
-        results.error = 'Internal Server Error'
+        results.message = 'Internal Server Error'
         res.status(SERVER_ERROR).send(results)
     }
 }
-
 
 const storeCredential = async (userID, date) => {
     try {
